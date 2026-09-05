@@ -20,6 +20,16 @@ export const sql =
 // Reuse the client across warm serverless invocations instead of opening a pool per request.
 if (!isProduction) globalForDb.sql = sql;
 
+// A plain JS string bound against a `::timestamptz` cast is silently round-tripped
+// through a Date by postgres.js and truncated to millisecond precision (Part 9).
+// Seed/bulk-inserted rows routinely tie on the exact microsecond, so any keyset
+// cursor comparing timestamps needs this to avoid skipping or repeating a row at a
+// tie boundary. sql.typed(value, 25) forces the TEXT oid so the raw string reaches
+// Postgres untouched, and Postgres's own text-to-timestamptz parser preserves it.
+export function typedTimestamp(value: string | null) {
+  return value === null ? null : sql.typed(value, 25);
+}
+
 export async function pingDb(): Promise<{ ok: boolean; latencyMs: number; error?: string }> {
   const start = performance.now();
   try {

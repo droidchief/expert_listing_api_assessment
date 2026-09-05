@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { UUID_RE } from './shared.js';
 
 const POST_TYPES = ['general', 'property', 'request'] as const;
 const TRANSACTION_TYPES = [
@@ -10,8 +11,6 @@ const TRANSACTION_TYPES = [
   'looking_for_shortlet',
 ] as const;
 const POSTED_WITHIN = ['24h', '7d', '30d'] as const;
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Express hands us "?post_type=property,request" as one string; split it into an
 // array before validating against the enum.

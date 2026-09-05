@@ -1,6 +1,16 @@
 import type { NextFunction, Request, Response } from 'express';
-import { AppError, InternalError, pgErrorMap } from '../errors/index.js';
+import { AppError, InternalError, ValidationError, pgErrorMap } from '../errors/index.js';
 import { logger } from '../utils/logger.js';
+
+// body-parser's express.json() throws a plain SyntaxError (with statusCode 400) for
+// malformed JSON, not an AppError — without this it falls through to a 500.
+function isMalformedJsonError(err: unknown): boolean {
+  return (
+    err instanceof SyntaxError &&
+    'statusCode' in err &&
+    (err as { statusCode?: unknown }).statusCode === 400
+  );
+}
 
 // The only place an error response is formatted.
 export function errorHandler(
@@ -9,8 +19,11 @@ export function errorHandler(
   res: Response,
   _next: NextFunction,
 ): void {
-  const appError =
-    err instanceof AppError ? err : (pgErrorMap(err) ?? new InternalError());
+  const appError = err instanceof AppError
+    ? err
+    : isMalformedJsonError(err)
+      ? new ValidationError('That request body is not valid JSON.')
+      : (pgErrorMap(err) ?? new InternalError());
 
   const logPayload = {
     request_id: req.id,

@@ -1,4 +1,4 @@
-import { sql } from '../config/db.js';
+import { sql, typedTimestamp } from '../config/db.js';
 
 export interface FeedRowAuthor {
   id: string;
@@ -102,17 +102,9 @@ export interface FeedQueryParams {
 // parameter and fails with "could not determine polymorphic type" otherwise.
 export async function selectFeed(params: FeedQueryParams): Promise<FeedRow[]> {
   // Wraps get_feed() (unmodified) in one extra SELECT — still a single round trip —
-  // to add a full-precision text form of created_at. postgres.js parses timestamptz
-  // columns into a JS Date on the way out (millisecond precision only), and — the
-  // less obvious half of the same problem — it ALSO silently truncates a plain JS
-  // string parameter bound against a `::timestamptz` cast to millisecond precision
-  // on the way in, because it detects the date-like string and round-trips it
-  // through a Date before sending it. Seed data ties multiple rows on the exact
-  // same microsecond, so a truncated cursor parameter re-includes or skips a row at
-  // that exact tie boundary. sql.typed(value, 25) forces the bind parameter to the
-  // TEXT oid, bypassing postgres.js's own serialization so Postgres's *own*
-  // text-to-timestamptz parser (which does preserve microseconds) handles it.
-  const cursorTs = params.cursorTs === null ? null : sql.typed(params.cursorTs, 25);
+  // to add a full-precision text form of created_at (see typedTimestamp for why the
+  // cursor parameter also needs it).
+  const cursorTs = typedTimestamp(params.cursorTs);
 
   return sql<FeedRow[]>`
     SELECT f.*, (to_json(f.created_at) #>> '{}') AS created_at_iso

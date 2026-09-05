@@ -131,3 +131,96 @@ Content-Type: application/json
 POST {{baseUrl}}/posts/{{postId}}/like
 Content-Type: application/json
 
+### --- GET /posts/:id/comments -----------------------------------------------
+### post 2 from the design has exactly 7 comments (one is a reply)
+@commentedPostId = 20000000-0000-0000-0000-000000000002
+
+### Root comments only, newest first
+GET {{baseUrl}}/posts/{{commentedPostId}}/comments
+
+### sort=oldest reverses the order
+GET {{baseUrl}}/posts/{{commentedPostId}}/comments?sort=oldest
+
+### Pagination sweep manually, page 1 of N (limit=2)
+GET {{baseUrl}}/posts/{{commentedPostId}}/comments?limit=2
+
+### --- GET /posts/:id/comments errors ------------------------------------------
+
+### Nonexistent post -> 404 POST_NOT_FOUND, NOT an empty array
+GET {{baseUrl}}/posts/00000000-0000-0000-0000-000000000000/comments
+
+### Malformed cursor -> 400 INVALID_CURSOR
+GET {{baseUrl}}/posts/{{commentedPostId}}/comments?cursor=garbage
+
+### --- POST /posts/:id/comments -----------------------------------------------
+
+### Basic create: 201, full comment, post_comment_count
+POST {{baseUrl}}/posts/{{commentedPostId}}/comments
+Content-Type: application/json
+
+{"body":"Is the parking secured?"}
+
+### Idempotent create — run twice with the same client_token for an identical id
+POST {{baseUrl}}/posts/{{commentedPostId}}/comments
+Content-Type: application/json
+
+{"body":"double tap test","client_token":"tok-abc12345"}
+
+### POST {{baseUrl}}/posts/{{commentedPostId}}/comments (same body again — same comment id)
+
+### Valid reply (replace parent_comment_id with a real root comment id)
+POST {{baseUrl}}/posts/{{commentedPostId}}/comments
+Content-Type: application/json
+
+{"body":"Yes, gated compound.","parent_comment_id":"<root-comment-id>"}
+
+### --- POST /posts/:id/comments errors ------------------------------------------
+
+### Reply to a reply -> 409 MAX_REPLY_DEPTH, never 500
+POST {{baseUrl}}/posts/{{commentedPostId}}/comments
+Content-Type: application/json
+
+{"body":"grandchild","parent_comment_id":"<a-reply-id>"}
+
+### Parent from a different post -> 400 with field parent_comment_id
+POST {{baseUrl}}/posts/{{postId}}/comments
+Content-Type: application/json
+
+{"body":"wrong post","parent_comment_id":"<root-comment-id-from-another-post>"}
+
+### Nonexistent parent -> 404 PARENT_COMMENT_NOT_FOUND
+POST {{baseUrl}}/posts/{{commentedPostId}}/comments
+Content-Type: application/json
+
+{"body":"x","parent_comment_id":"00000000-0000-0000-0000-000000000000"}
+
+### Nonexistent post -> 404 POST_NOT_FOUND
+POST {{baseUrl}}/posts/00000000-0000-0000-0000-000000000000/comments
+Content-Type: application/json
+
+{"body":"x"}
+
+### Empty body -> 400 with field_errors on "body"
+POST {{baseUrl}}/posts/{{commentedPostId}}/comments
+Content-Type: application/json
+
+{"body":""}
+
+### Whitespace-only body -> 400 with field_errors on "body"
+POST {{baseUrl}}/posts/{{commentedPostId}}/comments
+Content-Type: application/json
+
+{"body":"   "}
+
+### Unknown body key -> 400 (schema is .strict())
+POST {{baseUrl}}/posts/{{commentedPostId}}/comments
+Content-Type: application/json
+
+{"body":"x","extra":1}
+
+### client_token under 8 chars -> 400
+POST {{baseUrl}}/posts/{{commentedPostId}}/comments
+Content-Type: application/json
+
+{"body":"x","client_token":"short"}
+

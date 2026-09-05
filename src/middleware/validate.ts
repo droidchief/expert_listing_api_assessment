@@ -6,7 +6,11 @@ type Target = 'body' | 'query' | 'params';
 
 export function validate(schema: ZodType, target: Target) {
   return (req: Request, _res: Response, next: NextFunction): void => {
-    const result = schema.safeParse(req[target]);
+    // A request with no body gives req.body === undefined; default it to {} before
+    // validating rather than letting a body schema fail on a perfectly valid
+    // "no options supplied" request.
+    const input = target === 'body' && req.body === undefined ? {} : req[target];
+    const result = schema.safeParse(input);
 
     if (!result.success) {
       const fieldErrors: FieldError[] = result.error.issues.map((issue) => ({

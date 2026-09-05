@@ -74,3 +74,60 @@ GET {{baseUrl}}/posts?limit=0
 
 ### min_price > max_price -> 400 with a field error
 GET {{baseUrl}}/posts?min_price=500&max_price=100
+
+### --- POST /posts/:id/like ------------------------------------------------
+### Replace {{postId}} with a real post id (e.g. from GET /posts?limit=1).
+
+@postId = 20000000-0000-0000-0000-000000000001
+
+### Bare toggle: flips whatever the current state is
+POST {{baseUrl}}/posts/{{postId}}/like
+
+### Bare toggle again: flips back
+POST {{baseUrl}}/posts/{{postId}}/like
+
+### Explicit like — idempotent, run twice for an identical response
+POST {{baseUrl}}/posts/{{postId}}/like
+Content-Type: application/json
+
+{"action":"like"}
+
+### POST {{baseUrl}}/posts/{{postId}}/like  (run the same body again — identical response)
+
+### Explicit unlike — idempotent, run twice for an identical response
+POST {{baseUrl}}/posts/{{postId}}/like
+Content-Type: application/json
+
+{"action":"unlike"}
+
+### A different viewer sees an independent like state
+POST {{baseUrl}}/posts/{{postId}}/like
+X-User-Id: 00000000-0000-0000-0000-000000000002
+Content-Type: application/json
+
+{"action":"like"}
+
+### --- POST /posts/:id/like errors ------------------------------------------
+
+### Nonexistent post -> 404 POST_NOT_FOUND
+POST {{baseUrl}}/posts/00000000-0000-0000-0000-000000000000/like
+
+### Malformed uuid -> 400 VALIDATION_ERROR, never 404 or 500
+POST {{baseUrl}}/posts/not-a-uuid/like
+
+### Unknown body key -> 400 (schema is .strict())
+POST {{baseUrl}}/posts/{{postId}}/like
+Content-Type: application/json
+
+{"like":true}
+
+### Invalid action value -> 400 with field_errors
+POST {{baseUrl}}/posts/{{postId}}/like
+Content-Type: application/json
+
+{"action":"unliked"}
+
+### Absent body -> 200, toggles
+POST {{baseUrl}}/posts/{{postId}}/like
+Content-Type: application/json
+

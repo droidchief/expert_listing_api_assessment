@@ -9,3 +9,7 @@
 | 0005 posts | `20260904211213_posts.sql` |
 | 0006 post_media | `20260904211219_post_media.sql` |
 | 0007 comments | `20260904211225_comments.sql` |
+| 0008 engagement | `20260905072257_engagement.sql` |
+| 0009 social | `20260905072303_social.sql` |
+| 0010 auxiliary | `20260905072309_auxiliary.sql` |
+| 0010b comments_client_token | `20260905072315_comments_client_token.sql` |

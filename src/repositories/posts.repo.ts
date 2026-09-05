@@ -1,3 +1,4 @@
+import postgres from 'postgres';
 import { sql, typedTimestamp } from '../config/db.js';
 
 export interface FeedRowAuthor {
@@ -123,4 +124,33 @@ export async function selectFeed(params: FeedQueryParams): Promise<FeedRow[]> {
       ${params.postedAfter}::timestamptz
     ) AS f
   `;
+}
+
+export interface CreatedPost {
+  id: string;
+  created_at: string;
+}
+
+export async function createPost(
+  authorId: string,
+  payload: postgres.JSONValue,
+): Promise<CreatedPost> {
+  // sql.json(payload), not JSON.stringify(payload) + ::jsonb: postgres.js auto-JSON-
+  // encodes a JS object passed to sql.json, but a plain string interpolated against a
+  // ::jsonb cast gets encoded *again* on top of the JSON.stringify already done here —
+  // the result is a jsonb scalar STRING containing escaped JSON text, not a jsonb
+  // OBJECT, so every ->>'key' extraction inside create_post() silently returns NULL.
+  const [created] = await sql<[{ id: string }]>`
+    SELECT create_post(${authorId}::uuid, ${sql.json(payload)}) AS id
+  `;
+
+  // A separate, second query, deliberately: reading posts in the same statement as
+  // the create_post() call risks a snapshot-visibility gap (a volatile function's
+  // INSERT isn't guaranteed visible to a join in the same top-level query the way it
+  // would be across two round trips). Fetching afterwards is unambiguous.
+  const [row] = await sql<[{ id: string; created_at_iso: string }]>`
+    SELECT id, (to_json(created_at) #>> '{}') AS created_at_iso
+    FROM posts WHERE id = ${created.id}::uuid
+  `;
+  return { id: row.id, created_at: row.created_at_iso };
 }

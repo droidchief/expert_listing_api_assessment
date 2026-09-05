@@ -224,3 +224,107 @@ Content-Type: application/json
 
 {"body":"x","client_token":"short"}
 
+### --- GET /me ---------------------------------------------------------------
+
+### The mock user (miracle.h), with role_label and default_location
+GET {{baseUrl}}/me
+
+### Unknown user -> 404 USER_NOT_FOUND
+GET {{baseUrl}}/me
+X-User-Id: 00000000-0000-0000-0000-0000000000ff
+
+### --- GET /filters/options -----------------------------------------------------
+
+### Static + dynamic filter metadata for the filter sheet
+GET {{baseUrl}}/filters/options
+
+### --- GET /locations -----------------------------------------------------------
+
+### Typeahead, case-insensitive
+GET {{baseUrl}}/locations?q=lek
+
+### No q returns the most-used locations
+GET {{baseUrl}}/locations
+
+### No results -> 200 [], never 404
+GET {{baseUrl}}/locations?q=zzzznope
+
+### limit clamps like the feed
+GET {{baseUrl}}/locations?limit=999
+
+### --- POST /uploads/sign -------------------------------------------------------
+
+### Valid sign — path is server-generated, never client-supplied
+POST {{baseUrl}}/uploads/sign
+Content-Type: application/json
+
+{"bucket":"post-media","content_type":"image/webp"}
+
+### Unknown bucket -> 400
+POST {{baseUrl}}/uploads/sign
+Content-Type: application/json
+
+{"bucket":"secrets","content_type":"image/webp"}
+
+### MIME not allowed for bucket -> 415 UNSUPPORTED_MEDIA_TYPE
+POST {{baseUrl}}/uploads/sign
+Content-Type: application/json
+
+{"bucket":"avatars","content_type":"video/mp4"}
+
+### byte_size over the bucket limit -> 413 PAYLOAD_TOO_LARGE
+POST {{baseUrl}}/uploads/sign
+Content-Type: application/json
+
+{"bucket":"post-media","content_type":"image/webp","byte_size":99999999}
+
+### --- POST /posts (composer) -----------------------------------------------------
+
+### Valid property post -> 201 { id, created_at }
+POST {{baseUrl}}/posts
+Content-Type: application/json
+
+{
+  "post_type":"property","body":"Newly serviced 3-bedroom in Lekki Phase 1.",
+  "transaction_type":"for_rent","bedrooms":3,"parking_spaces":2,
+  "price_amount":12000000,"price_period":"per_annum"
+}
+
+### Invalid combination rejected by zod BEFORE the database -> 400, field transaction_type
+POST {{baseUrl}}/posts
+Content-Type: application/json
+
+{"post_type":"general","body":"x","transaction_type":"for_sale"}
+
+### Property post missing a required transaction_type -> 400
+POST {{baseUrl}}/posts
+Content-Type: application/json
+
+{"post_type":"property","body":"x"}
+
+### Unpaired coordinates -> 400
+POST {{baseUrl}}/posts
+Content-Type: application/json
+
+{"post_type":"general","body":"x","latitude":6.45}
+
+### Video media without duration -> 400 from zod
+POST {{baseUrl}}/posts
+Content-Type: application/json
+
+{
+  "post_type":"general","body":"x",
+  "media":[{"media_type":"video","storage_path":"p/v.mp4","public_url":"https://e.com/v.mp4"}]
+}
+
+### location_id auto-populates location_label via the Part 5 trigger
+POST {{baseUrl}}/posts
+Content-Type: application/json
+
+{"post_type":"general","body":"loc trigger test","location_id":"10000000-0000-0000-0000-000000000001"}
+
+### --- GET /stories ---------------------------------------------------------------
+
+### One row per author with a live story, unseen first
+GET {{baseUrl}}/stories
+

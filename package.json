@@ -16,7 +16,7 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "db:push": "supabase db push",
-    "db:seed": "psql \"$DIRECT_DATABASE_URL\" -f supabase/seed.sql",
+    "db:seed": "tsx scripts/seed.ts",
     "db:reset": "supabase db reset --linked"
   },
   "dependencies": {

@@ -19,6 +19,7 @@
 | 0013 fn_get_feed | `20260905085243_fn_get_feed.sql` |
 | 0014 fn_interactions | `20260905085251_fn_interactions.sql` |
 | 0015 fn_maintenance | `20260905085258_fn_maintenance.sql` |
+| 0016 rls | `20260905100239_rls.sql` |
 
 `0012b` is a deliberate scope reduction, not a bug fix: it drops twelve tables built in
 Parts 2–4 that turned out wider than the assessment brief requires (follows, comment

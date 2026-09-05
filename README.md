@@ -35,8 +35,26 @@ npm run dev
 | `format`    | Run Prettier                                       |
 | `test`      | Run the test suite                                 |
 | `db:push`   | Push local migrations to the linked Supabase project |
-| `db:seed`   | Run `supabase/seed.sql` against the direct database URL |
+| `db:seed`   | Run `supabase/seed.sql` via `scripts/seed.ts` |
 | `db:reset`  | Reset the linked Supabase project's database        |
+
+## Seed data
+
+`supabase/seed.sql` is idempotent (wipe then insert) and safe to run twice via
+`npm run db:seed`. Avatars (`i.pravatar.cc`) and post/story images (`picsum.photos`)
+are external placeholder services, not uploaded assets — there is no storage bucket
+behind them.
+
+## Row Level Security
+
+The five content tables the app reads (`users`, `posts`, `post_media`, `comments`,
+`post_likes`) have public, read-only `SELECT` policies for `anon`/`authenticated`.
+`locations`, `stories` and `story_views` have RLS enabled with zero policies
+(deny-all) since nothing reads them directly via PostgREST. All writes go through the
+API using the service role, which bypasses RLS, as do the five `SECURITY DEFINER`
+RPCs. When real auth arrives, add owner-scoped write policies (e.g.
+`auth.uid() = author_id`) alongside these read policies — there is deliberately no
+`current_app_user()` helper, since without `auth.uid()` it would always return NULL.
 
 ## TODO
 

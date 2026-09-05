@@ -13,3 +13,5 @@
 | 0009 social | `20260905072303_social.sql` |
 | 0010 auxiliary | `20260905072309_auxiliary.sql` |
 | 0010b comments_client_token | `20260905072315_comments_client_token.sql` |
+| 0011 indexes | `20260905075710_indexes.sql` |
+| 0012 triggers | `20260905075716_triggers.sql` |

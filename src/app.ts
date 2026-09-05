@@ -7,6 +7,7 @@ import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
 import { requestId } from './middleware/requestId.js';
 import { mockAuth } from './middleware/mockAuth.js';
+import { rateLimiter } from './middleware/rateLimit.js';
 import { notFound } from './middleware/notFound.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import routes from './routes/index.js';
@@ -23,6 +24,11 @@ const helmet = require('helmet') as typeof import('helmet').default;
 export function createApp(): Express {
   const app = express();
 
+  // Vercel puts every request behind its own proxy; without this express-rate-limit
+  // reads req.ip as the proxy's address (every client collapses into one IP bucket)
+  // and, depending on version, refuses to start over the ambiguity.
+  app.set('trust proxy', 1);
+
   app.use(requestId);
   app.use(helmet());
   app.use(cors({ origin: env.CORS_ORIGINS === '*' ? '*' : env.CORS_ORIGINS.split(',') }));
@@ -30,6 +36,7 @@ export function createApp(): Express {
   app.use(express.json({ limit: '1mb' }));
   app.use(pinoHttp({ logger, customProps: (req) => ({ request_id: String(req.id) }) }));
   app.use(mockAuth);
+  app.use(rateLimiter);
 
   app.use('/api/v1', routes);
 

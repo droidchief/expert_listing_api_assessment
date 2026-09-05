@@ -15,3 +15,10 @@
 | 0010b comments_client_token | `20260905072315_comments_client_token.sql` |
 | 0011 indexes | `20260905075710_indexes.sql` |
 | 0012 triggers | `20260905075716_triggers.sql` |
+| 0012b scope_cleanup | `20260905083856_scope_cleanup.sql` |
+
+`0012b` is a deliberate scope reduction, not a bug fix: it drops twelve tables built in
+Parts 2–4 that turned out wider than the assessment brief requires (follows, comment
+likes, bookmarks, shares, views, notifications, reports, blocks, saved filters,
+hashtags, post_hashtags, mentions). Nothing built in those parts was wrong — a reviewer
+of the migration history should expect to see tables appear and then disappear here.

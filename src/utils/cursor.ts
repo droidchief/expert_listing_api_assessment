@@ -1,7 +1,12 @@
 import { InvalidCursorError } from '../errors/AppError.js';
 
 export interface CursorInput {
-  ts: Date;
+  // A precise ISO-8601 string, not a Date — a JS Date only has millisecond
+  // precision, but Postgres timestamptz carries microseconds. Two rows can share
+  // the same millisecond and differ only in the microseconds, and round-tripping
+  // through a Date would silently truncate that, corrupting the keyset comparison
+  // at exact tie boundaries (a page skips or repeats a row a few pages in).
+  ts: string;
   id: string;
 }
 
@@ -9,7 +14,7 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function encodeCursor(input: CursorInput): string {
-  const payload = JSON.stringify({ ts: input.ts.toISOString(), id: input.id });
+  const payload = JSON.stringify({ ts: input.ts, id: input.id });
   return Buffer.from(payload, 'utf8').toString('base64url');
 }
 
@@ -40,8 +45,9 @@ export function decodeCursor(raw: string): CursorInput {
     throw new InvalidCursorError();
   }
 
-  const date = new Date(ts);
-  if (Number.isNaN(date.getTime())) {
+  // Validated for parseability only — the original string is kept as-is so its
+  // precision survives untouched.
+  if (Number.isNaN(new Date(ts).getTime())) {
     throw new InvalidCursorError();
   }
 
@@ -49,5 +55,5 @@ export function decodeCursor(raw: string): CursorInput {
     throw new InvalidCursorError();
   }
 
-  return { ts: date, id };
+  return { ts, id };
 }

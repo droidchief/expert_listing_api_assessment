@@ -5,11 +5,11 @@ import { InvalidCursorError } from '../src/errors/AppError.js';
 const VALID_ID = '11dabec2-e4e3-4e96-863d-6018b8cf9d52';
 
 describe('cursor', () => {
-  it('round-trips ts and id', () => {
-    const ts = new Date('2026-09-05T10:00:00.000Z');
+  it('round-trips ts and id, preserving microsecond precision', () => {
+    const ts = '2026-09-05T10:00:00.519166+00:00';
     const encoded = encodeCursor({ ts, id: VALID_ID });
     const decoded = decodeCursor(encoded);
-    expect(decoded.ts.toISOString()).toBe(ts.toISOString());
+    expect(decoded.ts).toBe(ts);
     expect(decoded.id).toBe(VALID_ID);
   });
 

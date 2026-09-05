@@ -10,6 +10,11 @@ const MAX_DEPTH = 6;
 function redactSensitiveKeys(value: unknown, depth = 0): unknown {
   if (depth >= MAX_DEPTH || value === null || typeof value !== 'object') return value;
 
+  // pino's own err serializer runs *after* this formatter and needs the real Error
+  // instance (message/stack are non-enumerable, so walking it here would otherwise
+  // replace it with an empty {} before the serializer ever sees it).
+  if (value instanceof Error) return value;
+
   if (Array.isArray(value)) {
     return value.map((item) => redactSensitiveKeys(item, depth + 1));
   }
@@ -27,6 +32,10 @@ export const logger = pino({
     paths: ['req.headers.authorization', 'req.headers["x-user-id"]'],
     censor: '[redacted]',
   },
+  // Error/message/stack are non-enumerable on a real Error instance, so pino's own
+  // err serializer must run first to turn it into a plain object — otherwise the
+  // redaction formatter below (which walks own enumerable keys) sees an empty {}.
+  serializers: { err: pino.stdSerializers.err },
   formatters: {
     log: (object) => redactSensitiveKeys(object) as Record<string, unknown>,
   },

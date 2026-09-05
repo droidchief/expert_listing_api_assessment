@@ -16,8 +16,20 @@ export function validate(schema: ZodType, target: Target) {
       throw new ValidationError('Request validation failed.', fieldErrors);
     }
 
-    // Assign the parsed result back so downstream code gets coerced types.
-    req[target] = result.data;
+    // Assign the parsed result back so downstream code gets coerced types. Express 5
+    // made req.query a getter-only accessor (parsed lazily from the URL), so a plain
+    // assignment throws "Cannot set property query ... which has only a getter" —
+    // redefine the property instead. body/params are still plain writable properties.
+    if (target === 'query') {
+      Object.defineProperty(req, 'query', {
+        value: result.data,
+        writable: true,
+        configurable: true,
+        enumerable: true,
+      });
+    } else {
+      req[target] = result.data;
+    }
     next();
   };
 }

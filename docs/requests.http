@@ -1,1 +1,76 @@
-# HTTP request collection. Populated from Part 8.
+### Expert Listing API — request collection
+### Point @baseUrl at local or production before running any request below.
+
+@baseUrl = http://localhost:3000/api/v1
+# @baseUrl = https://expert-listing-backend.vercel.app/api/v1
+
+### Health check
+GET {{baseUrl}}/health
+
+### Unknown route -> 404 envelope
+GET {{baseUrl}}/nope
+
+### Request id echoed when supplied
+GET {{baseUrl}}/health
+X-Request-Id: my-test-id
+
+### --- GET /posts -------------------------------------------------------
+
+### Basic shape: 3 hydrated items, pagination present
+GET {{baseUrl}}/posts?limit=3
+
+### Default limit (20)
+GET {{baseUrl}}/posts
+
+### Filter: single post_type
+GET {{baseUrl}}/posts?post_type=property
+
+### Filter: csv post_type
+GET {{baseUrl}}/posts?post_type=property,request
+
+### Filter: transaction_type
+GET {{baseUrl}}/posts?transaction_type=for_rent
+
+### Filter: has_media=true
+GET {{baseUrl}}/posts?has_media=true
+
+### Filter: has_media=false
+GET {{baseUrl}}/posts?has_media=false
+
+### Filter: min_bedrooms
+GET {{baseUrl}}/posts?min_bedrooms=3
+
+### Filter: posted_within
+GET {{baseUrl}}/posts?posted_within=24h
+
+### Two filters combine with AND
+GET {{baseUrl}}/posts?post_type=property&transaction_type=for_rent
+
+### Filters persist across a cursor page (run once, copy pagination.next_cursor
+### from the response into the cursor param below, keeping post_type)
+GET {{baseUrl}}/posts?post_type=property&limit=2
+
+### GET {{baseUrl}}/posts?post_type=property&limit=2&cursor=<paste next_cursor here>
+
+### Pagination sweep manually, page 1 of N (limit=7)
+GET {{baseUrl}}/posts?limit=7
+
+### --- Errors -------------------------------------------------------------
+
+### Malformed cursor -> 400 INVALID_CURSOR
+GET {{baseUrl}}/posts?cursor=garbage
+
+### Invalid enum value -> 400 VALIDATION_ERROR with field_errors
+GET {{baseUrl}}/posts?post_type=nonsense
+
+### Unknown query param -> 400 (schema is .strict())
+GET {{baseUrl}}/posts?unknown_param=x
+
+### limit=999 clamps to 50 (pagination.limit will read 50)
+GET {{baseUrl}}/posts?limit=999
+
+### limit=0 -> 400 VALIDATION_ERROR
+GET {{baseUrl}}/posts?limit=0
+
+### min_price > max_price -> 400 with a field error
+GET {{baseUrl}}/posts?min_price=500&max_price=100

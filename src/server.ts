@@ -1,12 +1,15 @@
-// Replaced in Part 8 by createApp() from src/app.ts
-import { createServer } from 'node:http';
+import { createApp } from './app.js';
 import { env } from './config/env.js';
+import { logger } from './utils/logger.js';
 
-const server = createServer((_req, res) => {
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ status: 'placeholder', part: 1 }));
+const app = createApp();
+
+app.listen(env.PORT, () => logger.info({ port: env.PORT }, 'listening'));
+
+// Log only — never process.exit(). On Fluid compute that would kill a warm instance
+// mid-flight for other in-progress requests.
+process.on('unhandledRejection', (reason) => {
+  logger.error({ err: reason }, 'unhandled rejection');
 });
 
-server.listen(env.PORT, () => {
-  console.log(`Server listening on port ${env.PORT}`);
-});
+export default app;

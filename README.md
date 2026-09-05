@@ -27,8 +27,6 @@ npm run dev
 | Script      | Description                                      |
 | ----------- | ------------------------------------------------- |
 | `dev`       | Run the dev server with hot reload                 |
-| `build`     | Compile TypeScript to `dist/`                      |
-| `start`     | Run the compiled server                            |
 | `verify`    | Validate env vars and check database connectivity  |
 | `typecheck` | Type-check without emitting                        |
 | `lint`      | Run ESLint                                         |
@@ -56,7 +54,27 @@ RPCs. When real auth arrives, add owner-scoped write policies (e.g.
 `auth.uid() = author_id`) alongside these read policies — there is deliberately no
 `current_app_user()` helper, since without `auth.uid()` it would always return NULL.
 
+## Deployment
+
+Deployed to Vercel as a single zero-config Node.js function (Express is
+auto-detected — no `build`/`start` scripts, no `api/` folder, no rewrites). The
+entry point is `src/server.ts` (`app.listen()` + default export); `src/app.ts`
+also default-exports the built Express app in case Vercel's detection picks that
+file instead, since either way the default export must be a callable
+request handler.
+
+Production: https://expert-listing-backend.vercel.app — pushes to `main` on GitHub
+deploy automatically. Region is `dub1` (Dublin), matching the Supabase project's
+`eu-west-1` region.
+
+## Environment variable names
+
+`SUPABASE_SERVICE_ROLE_KEY` holds a legacy `service_role` JWT and
+`SUPABASE_ANON_KEY` holds an `sb_publishable_...` key — the names are stale
+relative to Supabase's current key-naming scheme, but both work as-is. Do not
+rename them; that only means re-entering the values in `.env` and in Vercel's
+project settings for no functional benefit.
+
 ## TODO
 
-- Confirm the Supabase project region and update `vercel.json`'s `regions` field
-  (currently `fra1`) to match, to avoid cross-region latency on every request.
+- None outstanding from Part 8. `vercel.json`'s `regions` is confirmed `dub1`.

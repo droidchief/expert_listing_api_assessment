@@ -8,8 +8,6 @@
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js",
     "verify": "tsx src/verify.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
